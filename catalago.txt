@@ -1,0 +1,308 @@
+function findTitle() {
+      var sheet = SpreadsheetApp.openById('1XNqXFL-dgwbpDjoov8r43_PFUarb7kJdKx3ye3-1j_E');
+      var hoja = sheet.getSheetByName('Horarios');
+      var datos = hoja.getRange(1,1, hoja.getLastRow(), hoja.getLastColumn()).getDisplayValues();
+
+  var fila = 0;
+  var startPositions = []
+
+              // Busca la fila donde estan los titulos 
+              for(var x = 0;x < datos.length;x++){   
+                var palabraABuscar = "Start";           //recorremos el rango hasta encontrar algun titulo en este cas "Start"
+                var indice = datos[x].indexOf(palabraABuscar);  //indicamos el numero de la fila 
+
+                if (indice !== -1) {
+                  fila = x
+                // console.log('posicion de x: '+x)
+                  break;
+                }
+              }
+
+
+
+          // Buscamos las posiciones del titulo Start
+  var startPositions = [];
+
+            for(var y = 0;y < datos[fila].length;y++){
+              if (datos[fila][y] === "Start") {
+                    //Logger.log('La palabra "Start" se encuentra en la posición ' + y + ' del array.');
+                    startPositions.push(y); // Almacena la posición de la columna "Start" en el arreglo
+                  }
+            }
+                var primerColumna  = startPositions[0];
+            //console.log('posiciones de titulo start: '+startPositions)
+
+
+
+
+   // Buscamos las posiciones del titulo End
+  var endPositions = [];
+              for(var y = 0;y < datos[fila].length;y++){
+                if (datos[fila][y] === "End") {
+                      //Logger.log('La palabra "Start" se encuentra en la posición ' + y + ' del array.');
+                      endPositions.push(y); // Almacena la posición de la columna "Start" en el arreglo
+                    }
+              }
+              //console.log('posiciones de titulo end: '+endPositions)
+
+
+
+     // Buscamos las posiciones del titulo Total por dia de la semana 
+  var totalPositions = [];
+            for(var y = 0;y < datos[fila].length;y++){
+              if (datos[fila][y] === "Total") {
+                    //Logger.log('La palabra "Start" se encuentra en la posición ' + y + ' del array.');
+                    totalPositions.push(y); // Almacena la posición de la columna "Start" en el arreglo
+                  }
+            }
+              var totalworked = totalPositions.pop() ; //la tabla tiene varios titulos total, necesitamos el ultimo, lo dejamos en otra variable diferente
+            //console.log('Ultimo Total:   '+totalworked)   
+       
+      
+
+            // aplicamos un filtro a los datos para eliminar filas vacias y filas con titulos.
+   datos = datos.filter((item) => item[8] != "" && item[8] != "Start" && item[8] != "Sunday" )
+   
+
+  //encontrar valores por fila
+            //ARRAYS PRINCIPALES:   Donde estan almacenados los valores de cada columna por filas 
+  var valorWorkedDays = [];
+  var valorEndFilas =   [];
+  var valorTotalFilas = [];
+  var valorStartFilas = [];
+  var totalHours =      [];
+  var tipoJornada =     "Continua";
+         
+
+  //Valores para Start
+        for (var fl = fila + 1; fl < datos.length; fl++) {  
+           var diasNoTrabajados = 0; 
+          
+            var datosColumnas = []; // Un array para almacenar los datos de las columnas especificadas
+              
+              for (var u = 0; u < startPositions.length; u++) {
+                var columna = startPositions[u] ;
+                if (columna >= 0 && columna < datos[fl].length) {
+                  datosColumnas.push(datos[fl][columna]); // Agrega el dato de la columna al array de datosColumnas
+                  if (datos[fl][columna] === "OFF" || datos[fl][columna] === "Off") {
+                    diasNoTrabajados++; // Incrementa el contador de días no trabajados
+                  }
+                }
+              }
+              // console.log("Datos de las columnas:", datosColumnas); // Imprime los datos de las columnas
+          
+          var daysWorked = 7 - diasNoTrabajados; // Calcula los días trabajados restando los días no trabajados del total de días en la semana (7 días)
+          valorWorkedDays.push(daysWorked); // Agrega el número de días trabajados al array de días trabajados por fila
+        }
+
+
+  var filaActual = []; // Almacenará los valores de la fila actual
+  
+
+
+ // Busca valores start, y guarda el valor más repetido
+ var valorStartFilas = []; // Un array para almacenar los valores más repetidos por fila en la columna especificada
+
+              // Bucle que recorre las filas en el arreglo 'datos'
+              for (var h = fila + 1; h < datos.length; h++) {
+                var countByValue = {}; // Objeto para llevar el recuento de valores en la fila
+                
+                // Bucle que recorre las posiciones de columna especificadas en el arreglo 'startPositions'
+                for (var u = 0; u < startPositions.length; u++) {
+                  var columna = startPositions[u];
+                  if (columna < datos[h].length && (datos[h][columna] === 'OFF' || datos[h][columna] === 'Off')) {
+                    // El valor es 'OFF' o 'Off', ignorar y continuar
+                    continue;
+                  }
+                  
+                  if (columna < datos[h].length) {
+                    var valor = datos[h][columna];
+                    // Incrementar el contador del valor actual o inicializarlo en 1 si es la primera vez que se encuentra
+                    if (countByValue[valor]) {
+                      countByValue[valor]++;
+                    } else {
+                      countByValue[valor] = 1;
+                    }
+                  }
+                }
+                
+                var mostCommonValue = null; // Valor más común en la fila
+                var highestCount = 0; // Recuento del valor más común
+                
+                // Encontrar el valor más común y su recuento en la fila
+                for (var key in countByValue) {
+                  if (countByValue[key] > highestCount) {
+                    mostCommonValue = key;
+                    highestCount = countByValue[key];
+                  }
+                }
+                valorStartFilas.push(mostCommonValue); // Agregamos la fila actual al array de filas
+              }
+
+              //console.log(valorStartFilas);
+
+
+
+
+  //Busca valores END, y guarda el valor mas repetido
+  var valorEndFilas = []; // Un array para almacenar los valores más repetidos por fila en la columna 'totalworked'
+
+                // Bucle que recorre las filas en el arreglo 'datos'
+                for (var h = (fila + 1); h < datos.length; h++) {
+                  
+                  var contador = {}; // Objeto para llevar el conteo de valores
+                  
+                  // Bucle que recorre las posiciones de columna especificadas en el arreglo 'endPositions'
+                  for (var u = 0; u < endPositions.length; u++) {
+                     
+                      var colum = endPositions[u];
+                      if (colum < datos[h].length && (datos[h][colum] === 'OFF' || datos[h][colum] === 'Off')) {
+                      // El valor es 'OFF' o 'Off', ignorar y continuar
+                          continue;
+                       } 
+                       if (colum < datos[h].length) {
+                          var valor = datos[h][colum];
+                          // Incrementar el contador del valor actual o inicializarlo en 1 si es la primera vez que se encuentra
+                            if (contador[valor]) {
+                              contador[valor]++;
+                            } else {
+                              contador[valor] = 1;
+                            }
+                        }
+                   }
+                  
+                   var valorComun = null; // Valor más común en la fila
+                   var recuento = 0; // Recuento del valor más común
+                
+                // Encontrar el valor más común y su recuento en la fila
+                for (var key in contador) {
+                  if (contador[key] > recuento) {
+                    valorComun = key;
+                    recuento = contador[key];
+                  }
+                }
+                valorEndFilas.push(valorComun); // Agregamos la fila actual al array de filas
+                }
+                //console.log(valorEndFilas)
+
+
+  var valorTotalFilas = []; // Un array para almacenar los valores por fila en la columna 'totalworked'
+  var horasOperadas   = [];
+     //console.log(valorTotalFilas)
+            for (var filaIndex = fila + 1; filaIndex < datos.length; filaIndex++) {
+                var columna = datos[filaIndex][totalworked ]; 
+                      valorTotalFilas.push(columna); // Agrega los datos de la fila actual al array de valores por fila
+                        }
+
+  //Total de horas asignadas, le sumamos 
+            for (var i = 0; i < valorTotalFilas.length; i++) {
+              var valorTotal = parseInt(valorTotalFilas[i], 10); // Convierte el valor total a entero
+              var valorWorked = parseInt(valorWorkedDays[i], 10); // Convierte el valor de días trabajados a entero
+              var nuevoValor = valorTotal + valorWorked; // Suma los valores
+              totalHours.push(nuevoValor); // Agrega el nuevo valor a la lista totalHours
+              horasOperadas.push(valorTotal);
+              //onsole.log(valorTotal)
+            }
+          
+           
+
+    //console.log(valorWorkedDays);
+    //console.log(valorStartFilas);
+    // console.log(valorEndFilas);
+    //console.log(valorTotalFilas) 
+    //console.log(totalHours);    
+
+
+     //Unifica las listas en una sola y verifica si tiene valores repetidos 
+  var filasOrganizadas = [];
+  var valoresRepetidos = {};
+
+              for (var i = 0; i < valorWorkedDays.length; i++) {
+                var fila = [
+                  valorWorkedDays[i],
+                  valorStartFilas[i],
+                  valorEndFilas[i],
+                  horasOperadas[i],
+                  totalHours[i],
+                  tipoJornada,
+                ];
+
+                // Verificar si la fila contiene algún valor vacío en alguna de las listas
+                // Verificar si la fila ya existe en el objeto de valores repetidos
+
+  var filaKey = fila.join(','); // Crear una clave única para la fila
+            if (!valoresRepetidos[filaKey]) {
+              filasOrganizadas.push(fila);
+              valoresRepetidos[filaKey] = true; // Marcar la fila como repetida
+            }
+}
+
+ var resultados = [];
+  var claves = {};
+
+  for (var i = 0; i < filasOrganizadas.length; i++) {
+    var fila = filasOrganizadas[i];
+    var clave = fila.join(','); // Crear una clave única para la fila
+
+    if (!claves[clave]) {
+      resultados.push(fila);
+      claves[clave] = true;
+    }
+  }
+
+      //console.log(resultados);
+
+//IMRPRIMIR EN CATALAGO
+
+var ss = SpreadsheetApp.openById('1JdUik4olPlYTFP_lVWyIZjGbdKB1uO9KZ4uzJzIsXC');
+var hojaDestino = ss.getSheetByName('Sheet1');
+
+var filaInicio = 3; // Fila de inicio para escribir los datos
+var columnaInicio = 2; // Columna de inicio para escribir los datos
+
+// Obtener los datos actuales en la hoja
+var data = hojaDestino.getRange(filaInicio, columnaInicio, hojaDestino.getLastRow() - filaInicio + 1, hojaDestino.getLastColumn() - columnaInicio + 1).getDisplayValues();
+
+var filasParaImprimir = [];
+
+// Filtrar filas organizadas que no están en la hoja y que la columna esté vacía
+for (var k = 0; k < filasOrganizadas.length; k++) {
+  var filaOrganizada = filasOrganizadas[k];
+  var claveOrganizada = filaOrganizada.join(',');
+  
+  // Buscar si la fila organizada existe en el arreglo 'data'
+  var existeEnData = data.some(function(dataRow) {
+    return dataRow.join(',') === claveOrganizada;
+  });
+
+  if (!existeEnData || filaOrganizada.every(function(cellValue) { return cellValue === ''; })) {
+    filasParaImprimir.push(filaOrganizada);
+  }
+}
+
+// Buscar la primera fila vacía para imprimir
+var filaImprimir = filaInicio;
+for (var i = filaInicio; i <= filaInicio + data.length; i++) {
+  if (i > filaInicio && i <= filaInicio + data.length && data[i - filaInicio - 1].every(function(cellValue) { return cellValue === ''; })) {
+    filaImprimir = i;
+    break;
+  }
+}
+
+// Imprimir las filas en la hoja a partir de la primera celda vacía encontrada
+for (var l = 0; l < filasParaImprimir.length; l++) {
+  var filaPrint = filasParaImprimir[l];
+  hojaDestino.getRange(filaImprimir + l, columnaInicio, 1, filaPrint.length).setValues([filaPrint]);
+}
+
+console.log("Valores escritos en la hoja de cálculo:", filasOrganizadas);
+
+
+
+}
+
+
+
+
+
+

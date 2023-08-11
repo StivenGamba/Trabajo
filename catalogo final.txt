@@ -1,0 +1,240 @@
+function encontrarCeldaVacia() {
+  var sheet = SpreadsheetApp.openById('1JdUik4olPlYTFP_lVWyIZjGbdKB1uO9KZ4uzJzIsXCo');
+      var hoja = sheet.getSheetByName('Turnos');
+      
+  // Obtén la última fila de la hoja
+      var ultimaFila = hoja.getLastRow();
+
+      // Obtiene los valores de la última fila
+      var datosUltimaFila = hoja.getRange(ultimaFila, 1, 1, hoja.getLastColumn()).getDisplayValues()[0];
+
+      // Elimina los valores vacíos de los datos de la última fila
+      var listaDatos = datosUltimaFila.filter(function(dato) {
+        return dato !== '';
+      });
+          
+        
+  var horaOriginalPos2 = listaDatos[2];
+      var nuevaHoraPos2 ;
+      listaDatos[2] = horaOriginalPos2;
+
+      var horaOriginalPos3 = listaDatos[3];
+      var nuevaHoraPos3;
+      listaDatos[3] = horaOriginalPos3;
+      
+
+  for(var i =0; i < 3; i++){
+    var matriz = new Array(7);
+      for (var ic = 0; ic < 7; ic++) {
+        matriz[ic] = new Array(7);
+        for (var j = 0; j < 7; j++) {
+    matriz[ic][j] ="";
+          }
+
+        }
+
+
+ for(var ii =0; ii < 7; ii++){
+
+  for(var iii =0; iii < 7; iii++){
+      
+
+      // Obtén la última fila de la hoja
+      var ultimaFila = hoja.getLastRow();
+
+      // Obtiene los valores de la última fila
+      var datosUltimaFila = hoja.getRange(ultimaFila, 1, 1, hoja.getLastColumn()).getDisplayValues()[0];
+
+      // Elimina los valores vacíos de los datos de la última fila
+      var listaDatos = datosUltimaFila.filter(function(dato) {
+        return dato !== '';
+      });
+      listaDatos[2] = horaOriginalPos2;
+      listaDatos[3] = horaOriginalPos3;
+      // Suma 1 (TURNO) al valor en la posición 0 de la lista
+      listaDatos[0] = parseInt(listaDatos[0]) + 1;
+      // suma el total de horas, (dias trabajados(1 hora de almuerzo por dia)  + total horas operadas)
+      listaDatos[5] = parseInt(listaDatos[4])+ parseInt(listaDatos[1]);
+      //suma los dias OFF
+      listaDatos[8] = 7 - parseInt(listaDatos[1])
+      var semana = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    // Suma una hora al valor en la posición 2 de la lista
+      
+
+      matriz[ii][iii]=semana[ii]+", "+semana[iii];
+
+      
+
+      console.log(horaOriginalPos2+" "+horaOriginalPos3);
+      //TIPO DE JORNADA
+      determinarTipoJornada(listaDatos[2], listaDatos[3], listaDatos);
+      
+      //HORAS OPERADAS
+      var tipoDeJornada = listaDatos[10];
+      determinarhorasOperadas(tipoDeJornada, listaDatos);
+
+      //HORAS PROGRAMADAS
+      var horasOperadas = listaDatos[4];
+      var diasTrabajados = listaDatos[1]
+      horasTotalesProgramadas(tipoDeJornada, horasOperadas, diasTrabajados, listaDatos);
+
+      //DIAS CORTOS 
+      diaCorto(tipoDeJornada, listaDatos);
+
+      //DIAS DE DESCANSO
+      var diasNoDisponibles = listaDatos[7];
+      var diasOff = listaDatos[8];
+      diasDescanso(diasNoDisponibles, diasOff, listaDatos, ii, iii,matriz);
+    
+      // Busca la siguiente fila vacía y establece los valores actualizados
+      var siguienteFilaVacia = ultimaFila + 1;
+
+
+
+        if (listaDatos[9]=="" || listaDatos[9]==null) {  
+            console.log(ii +"    "+iii);
+        }
+        else{
+          hoja.getRange(siguienteFilaVacia, 1, 1, listaDatos.length).setValues([listaDatos]);
+
+        console.log('Datos actualizados y guardados en la siguiente fila vacía.'+(i+1));
+        console.log(ii +"    "+iii);
+         
+        }
+       
+        
+    }
+    
+
+  }
+  horaOriginalPos2 = sumarUnaHora(horaOriginalPos2);
+    horaOriginalPos3 = sumarUnaHora(horaOriginalPos3);
+  console.log(matriz);
+  }
+}
+
+function diasDescanso(dianoAplica, dayOff, listaDatos, d1, d2, matriz){
+ 
+ var numeroDiasNoTrabaja = dayOff; 
+ var semana = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+ var diaNoAplica = dianoAplica.split(', ');
+
+ //console.log('dias cortos: '+diaNoAplica)
+
+    var diasNoTrabaja = [];
+
+ /*   for (var i = 0; i < semana.length && diasNoTrabaja.length < numeroDiasNoTrabaja; i++) {
+      var dia = semana[i];
+      
+      if (!diaNoAplica.includes(dia) && !diasNoTrabaja.includes(dia)) {
+      diasNoTrabaja.push(dia);
+    }
+    }*/
+
+    if (!diaNoAplica.includes(semana[d1])  && !diaNoAplica.includes(semana[d2]) && semana[d1]!=semana[d2] && (!matriz[d2][d1].includes(semana[d2]))) {
+      
+      diasNoTrabaja.push(semana[d1]);
+      diasNoTrabaja.push(semana[d2]);
+    }
+  
+
+      listaDatos[9]= diasNoTrabaja.join(', ');
+    //console.log('Dias no trabaja: '+listaDatos[9]); 
+}
+
+
+function diaCorto(jornada, listaDatos) {
+  
+  var semana = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  if (jornada === 'Diurna') {
+    var numdia=2;
+    var diurna = [semana[6]]; // Solo un día para jornada diurna
+    listaDatos[7] = diurna.join(', ');  
+  } else if (jornada === 'Mixta') {
+    var mixta = [semana[6], semana[0], semana[1]]; // Tres días para jornada mixta (
+      listaDatos[7] = mixta.join(', '); 
+  } else if (jornada === 'Nocturna') {
+    var nocturna = [semana[6], semana[0], semana[1], semana[2]]; // Cuatro días para jornada nocturna  
+      listaDatos[7] = nocturna.join(', ');
+  } else if (jornada === 'Part time') {
+    listaDatos[7] = 'Not applicable'; // Part time es "Not applicable"
+  }
+  //console.log(listaDatos)
+  /*
+    if (jornada === 'Diurna') {
+    var diurna = [semana[0]]; // Solo un día para jornada diurna
+    listaDatos[7] = diurna.join(', ');  
+  } else if (jornada === 'Mixta') {
+    var mixta = [semana[0], semana[1], semana[2]]; // Tres días para jornada mixta (
+      listaDatos[7] = mixta.join(', ');
+  } else if (jornada === 'Nocturna') {
+    var nocturna = [semana[0], semana[1], semana[2], semana[3]]; // Cuatro días para jornada nocturna  
+      listaDatos[7] = nocturna.join(', ');
+  } else if (jornada === 'Part time') {
+    listaDatos[7] = 'Not applicable'; // Part time es "Not applicable"
+  }
+  */
+}
+
+function horasTotalesProgramadas(jornada, hrsOperadas, daysworked, listaDatos){
+
+    if(jornada === 'Diurna' || jornada === 'Nocturna' || jornada === 'Mixta'){
+      listaDatos[5] = parseInt(hrsOperadas) + parseInt(daysworked); 
+    }
+    //console.log(hrsOperadas, daysworked, listaDatos[5])
+}
+
+function determinarhorasOperadas(jornada, listaDatos){
+
+  if(jornada === 'Diurna'){
+      listaDatos[4] = 44;
+  } else if (jornada === 'Nocturna'){
+      listaDatos[4] = 36;
+  } else if (jornada === 'Mixta'){
+      listaDatos[4] = 42
+  } else if(jornada === 'Part Time'){
+     listaDatos[4] = 30;
+  }
+
+}
+
+function determinarTipoJornada(horaEntrada, horaSalida, listaDatos) {
+  var partesHora1 = horaEntrada.split(":");
+  var partesHora2 = horaSalida.split(":");
+  var entrada = parseInt(partesHora1[0]);
+  var salida = parseInt(partesHora2[0]);
+  //console.log(entrada);
+
+    if ((entrada >= 6 && entrada <= 9) && (salida >= 15 && salida <= 18)) {
+        listaDatos[10] = "Diurna"; //44 horas, franja entre las 6 a 18,
+      } else if(entrada <=13 && (salida>= 18 && salida <=22)) {
+        listaDatos[10] = "Mixta"; //42 horas, finalicen entre las  18 a 22
+      }  else if (salida >=  14 && salida <= 23) {
+        listaDatos[10] = "Nocturna"; // 36 horas, su hora de tranajo esta entre 22 a 6,
+    }
+}
+ 
+ function sumarUnaHora(tiempo) {
+  var partesTiempo = tiempo.split(":");
+  var horas = parseInt(partesTiempo[0]);
+  var minutos = parseInt(partesTiempo[1]);
+  var segundos = parseInt(partesTiempo[2]);
+
+  horas += 4;
+
+  if (horas === 24) {
+    horas = 0;
+  }
+
+  return (
+    (horas < 10 ? "0" : "") +
+    horas +
+    ":" +
+    (minutos < 10 ? "0" : "") +
+    minutos +
+    ":" +
+    (segundos < 10 ? "0" : "") +
+    segundos
+  );
+}
